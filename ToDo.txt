@@ -1,0 +1,4 @@
+Should work for every query
+Should give human frndly response
+Use ollama model for table routers
+change all data values in small cases
