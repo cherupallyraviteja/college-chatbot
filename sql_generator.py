@@ -7,7 +7,10 @@ def generate_sql(prompt: str):
         json={
             "model": LLM_MODEL,
             "prompt": prompt,
-            "stream": False
+            "stream": False,
+            "options": {
+                "temperature": 0   # IMPORTANT
+            }
         }
     )
     return response.json()["response"].strip()

@@ -8,20 +8,25 @@ def rewrite_query(query: str) -> str:
     """
 
     prompt = f"""
-You are a query rewriting assistant.
+    You are a query rewriting assistant.
 
-Your job:
-- Correct spelling mistakes
-- Fix grammar
-- Rewrite the query clearly
-- Keep the meaning identical
-- Return ONLY the corrected query
+    STRICT RULES:
+    - Correct spelling and grammar only
+    - DO NOT add any new words
+    - DO NOT expand abbreviations
+    - DO NOT change meaning
+    - Keep query as close to original as possible
+    - Preserve important keywords (e.g., HOD, CGPA, CSE)
 
-Query:
-{query}
+    IMPORTANT 
+    - DO NOT add any new words
+    Return ONLY the corrected query.
 
-Rewritten query:
-"""
+    Query:
+    {query}
+
+    Rewritten query:
+    """
 
     body = {
         "model": MODEL,

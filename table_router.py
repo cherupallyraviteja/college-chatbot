@@ -1,85 +1,99 @@
-import requests
-""""
-OLLAMA_URL = "http://localhost:11434/api/generate"
-ROUTER_MODEL = "phi3:mini"
+from sentence_transformers import SentenceTransformer, util
 
-ALLOWED_TABLES = {
-    "students",
-    "faculty",
-    "fee_details",
-    "admission_process",
-    "admission_documents",
-    "transport_details",
-    "route_pickup_points",
-    "placements",
+model = SentenceTransformer(
+    "all-MiniLM-L6-v2",
+    local_files_only=True
+)
+
+TABLE_DESCRIPTIONS = {
+    "students": "student details like name roll cgpa attendance",
+    "faculty": "faculty teachers professors designation qualification",
+    "fee_details": "fees payment amount structure",
+    "degree_programs": "courses programs duration intake",
+    "admission_process": "admission steps procedure",
+    "admission_documents": "documents certificates required",
+    "transport_details": "bus routes driver transport",
+    "route_pickup_points": "bus stops pickup timings",
+    "placements": "jobs companies placements students",
 }
 
-def route_tables(user_query: str) -> list[str]:
-    prompt = f""
-You are a table selection system.
+COLUMN_DESCRIPTIONS = {
+    # students
+    "students.roll_no": "unique student roll number identifier",
+    "students.name": "student full name",
+    "students.cgpa": "numeric cgpa score of a student",
+    "students.attendance": "student attendance percentage",
+    "students.fee_status": "student fee payment status paid or pending",
 
-Given a user question, select all database tables required
-to answer the question.
+    # faculty
+    "faculty.name": "faculty member name teacher professor",
+    "faculty.designation": "faculty role professor assistant professor hod",
+    "faculty.department": "faculty department",
 
-Rules:
-- Choose ONLY from the allowed tables
-- Output ONLY table names, one per line
-- Do NOT explain anything
-- If no table applies, output NONE
+    # transport
+    "transport_details.route_no": "bus route number",
+    "transport_details.driver_name": "bus driver name",
+    "route_pickup_points.pickup_point": "bus stop location",
+    "route_pickup_points.pickup_time": "bus pickup timing",
 
-Allowed tables:
-- students
-- faculty
-- fee_details
-- admission_process
-- admission_documents
-- transport_details
-- route_pickup_points
-- placements
+    # placements
+    "placements.company": "company name placement",
+    "placements.student_name": "placed student name",
 
-User question:
-{user_query}
+    # admission
+    "admission_documents.document_name": "required documents certificates",
+    "admission_process.description": "admission procedure",
 
-Tables:
-""
-
-    response = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": ROUTER_MODEL,
-            "prompt": prompt,
-            "stream": False
-        }
-    ).json()["response"]
-
-    tables = [
-        line.strip()
-        for line in response.splitlines()
-        if line.strip() in ALLOWED_TABLES
-    ]
-
-    return tables
-
-"""
-TABLE_KEYWORDS = {
-    "faculty": ["faculty", "hod", "professor", "teacher"],
-    "students": ["student", "roll", "attendance", "marks", "cgpa","fee status"],
-    "fee_details": ["fee", "fees", "payment"],
-    "placements": ["placement", "package", "company"],
-    "transport_details": ["transport", "bus", "driver", "route", "bus number"],
-    "route_pickup_points": ["pickup", "stop", "bus stop","bus timings", "pickup time"],
-    "admission_programs": ["admission program", "degree program", "intake"],
-    "admission_process": ["admission process", "admission steps", "how to apply"],
-    "placements": ["placement", "package", "company","placed"],
-    "admission_documents" : ["admission documents", "required documents", "documents needed","documents list","documents required"],
+    # fees
+    "fee_details.amount": "fee amount",
+    "fee_details.program": "program fee structure",
 }
 
-def select_tables(user_query: str):
-    q = user_query.lower()
+def get_table(col):
+    return col.split(".")[0]
+
+# Precompute embeddings
+column_embeddings = {
+    col: model.encode(desc, convert_to_tensor=True)
+    for col, desc in COLUMN_DESCRIPTIONS.items()
+}
+
+def route_tables(user_query: str, top_k_tables=3):
+    query_emb = model.encode(user_query, convert_to_tensor=True)
+
+    col_scores = []
+    for col, emb in column_embeddings.items():
+        score = util.cos_sim(query_emb, emb).item()
+        col_scores.append((col, score))
+
+    col_scores.sort(key=lambda x: x[1], reverse=True)
+
+    # ---- aggregate table scores ----
+    table_scores = {}
+    for col, score in col_scores[:8]:   # slightly more columns
+        table = get_table(col)
+        table_scores[table] = table_scores.get(table, 0) + score
+
+    # ---- normalize (important) ----
+    for table in table_scores:
+        table_scores[table] /= 8
+
+    # ---- rank ----
+    ranked = sorted(table_scores.items(), key=lambda x: x[1], reverse=True)
+
+    # ---- dynamic filtering (key fix) ----
     selected = []
+    if not ranked:
+        return []
 
-    for table, keys in TABLE_KEYWORDS.items():
-        if any(k in q for k in keys):
-            selected.append(table)
+    return [ranked[0][0]]  # always include best
 
     return selected
+if __name__ == "__main__":
+    while True:
+        query = input("Enter your query: ")
+        if query.lower() == "exit":
+            break
+        tables = route_tables(query)
+        print("Relevant tables:", tables)
+        print()

@@ -114,75 +114,73 @@ company
 """
 }
 
-
-def build_sql_prompt(user_query, tables):
-    schema_text = "\n".join(SCHEMA[t] for t in tables)
-
-    return f"""
-You are a PostgreSQL SQL generator.
-
-STRICT RULES:
-- Output ONLY SQL
-- No markdown, no explanation
-- Use ONLY the schema below
-- Do NOT use tables not shown
-- Do NOT invent columns
-- Values for roll_no must always be enclosed in single quotes
-JOIN RULE:
-- route_pickup_points can only be joined with transport_details using route_id
-
-- If not answerable, output:
-  SELECT 'NOT_SUPPORTED' AS message;
-
-SCHEMA:
-{schema_text}
-
-QUESTION:
-{user_query}
-
-SQL:"""
-
-"""
-from schema_semantics import TABLE_SEMANTICS
+from schema_semantics import get_column_metadata
+from sql_generator import generate_sql
+from table_router import route_tables
 
 def build_sql_prompt(user_query: str, tables: list[str]) -> str:
-    schema_blocks = []
+    metadata = get_column_metadata(tables)
+
+    schema_text = ""
 
     for table in tables:
-        schema_blocks.append(SCHEMA[table])
+        schema_text += f"\nTABLE: {table}\n"
 
-        semantics = TABLE_SEMANTICS.get(table, {})
-        if semantics:
-            semantic_text = "\n".join(
-                f"- {col}: {desc}"
-                for col, desc in semantics.items()
+        for col in metadata[table]:
+            examples = ", ".join(col["examples"]) if col["examples"] else "N/A"
+
+            schema_text += (
+                f"{col['column']} ({col['type']})\n"
+                f"  - usage: {col['usage']}\n"
+                f"  - examples: {examples}\n"
             )
-            schema_blocks.append(
-                f"COLUMN MEANINGS:\n{semantic_text}"
-            )
+    extra_rules = """
+    IMPORTANT SEMANTICS:
+    - designation refers to roles like Professor, Assistant Professor
+    - fee_status refers to values like Paid, Pending
+    - roll_no is unique identifier, always use exact match
+    - names should be matched using ILIKE for flexibility
+    """ 
+    return f"""
+    You are an expert PostgreSQL SQL generator.
 
-    schema_text = "\n\n".join(schema_blocks)
+    STRICT RULES:
+    - Output ONLY SQL
+    - No explanation
+    - Use only given tables
+    - Always end with semicolon
 
-    return f""
-You are a PostgreSQL SQL generator.
+    IMPORTANT:
+    - Use examples to infer correct filters
+    - If query mentions a value similar to examples, use exact match
+    - For names → use ILIKE
+    - For roll_no → exact match
+    - For text → use LOWER() or ILIKE
+    - For numeric → use comparison operators
 
-STRICT RULES:
-- Output ONLY SQL
-- No markdown, no explanation
-- Use ONLY the schema below
-- Do NOT use tables not shown
-- Do NOT invent columns
-- Values for roll_no must always be enclosed in single quotes
-JOIN RULE:
-- route_pickup_points can only be joined with transport_details using route_id
+    ---
 
-- If not answerable, output:
-  SELECT 'NOT_SUPPORTED' AS message;
-SCHEMA:
-{schema_text}
+    SCHEMA:
+    {schema_text}
 
-QUESTION:
-{user_query}
+    ---
 
-SQL:
-"""
+    {extra_rules}
+
+    ---
+
+    QUESTION:
+    {user_query}
+
+    SQL:
+    """
+if __name__ == "__main__":
+    while True:
+        query = input("Enter your query: ")
+        if query.lower() == "exit":
+            break
+        tables = route_tables(query)
+        prompt = build_sql_prompt(query, tables)
+        sql=generate_sql(prompt)  # assume this function exists
+        print("SQL:", sql)
+        print()

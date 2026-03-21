@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Web Clone - AI College Bot</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar">
+      <header class="header">
+        <div class="user-profile">
+          <img src="https://ui-avatars.com/api/?name=User&background=random&color=fff" alt="User Profile" class="avatar">
+        </div>
+        <div class="header-icons">
+          <span class="material-icons icon" title="Communities">groups</span>
+          <span class="material-icons icon" title="Status">data_usage</span>
+          <span class="material-icons icon" title="Channels">chat</span>
+          <span class="material-icons icon" title="New chat">message</span>
+          <span class="material-icons icon" title="Menu">more_vert</span>
+        </div>
+      </header>
+      
+      <div class="search-container">
+        <div class="search-box">
+          <span class="material-icons search-icon">search</span>
+          <input type="text" placeholder="Search or start new chat">
+        </div>
+        <span class="material-icons icon filter-icon" title="Unread chats filter">filter_list</span>
+      </div>
+      
+      <div class="chat-list">
+        <div class="chat-item active">
+          <img src="https://ui-avatars.com/api/?name=AI&background=005c4b&color=fff" alt="AI Bot" class="avatar">
+          <div class="chat-info">
+            <div class="chat-header">
+              <span class="chat-name">AI College Assistant</span>
+              <span class="chat-time">10:00 AM</span>
+            </div>
+            <div class="chat-last-message">
+              <span class="message-text">Hello! I am your AI College Assistant. I can help you with questions about admissions, courses, campus life, and more!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="main-chat">
+      <header class="header chat-header-main">
+        <div class="chat-title-info">
+          <img src="https://ui-avatars.com/api/?name=AI&background=005c4b&color=fff" alt="AI Bot" class="avatar">
+          <div class="chat-title-text">
+            <span class="chat-name">AI College Assistant</span>
+            <span class="chat-status" id="typing-status">Online</span>
+          </div>
+        </div>
+        <div class="header-icons">
+          <span class="material-icons icon" title="Search">search</span>
+          <span class="material-icons icon" title="Menu">more_vert</span>
+        </div>
+      </header>
+      
+      <div class="chat-window" id="chat-window">
+        <!-- Chat bubbles will go here -->
+        <div class="message received">
+          <span class="message-text">Hello! I am your AI College Assistant. I can help you with questions about admissions, courses, campus life, and more!</span>
+          <span class="message-time">10:00 AM</span>
+        </div>
+      </div>
+      
+      <footer class="chat-footer">
+        <span class="material-icons icon" title="Emoji">mood</span>
+        <span class="material-icons icon" title="Attach">attach_file</span>
+        <div class="input-box">
+          <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+        </div>
+        <span class="material-icons icon" id="send-btn" title="Send">send</span>
+        <span class="material-icons icon" id="mic-btn" title="Voice message">mic</span>
+      </footer>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

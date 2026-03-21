@@ -74,3 +74,60 @@ TABLE_SEMANTICS = {
         "company": "Company where the student was placed."
     }
 }
+import psycopg2
+from config import DB_CONFIG
+
+def get_column_metadata(tables: list[str]):
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+
+    metadata = {}
+
+    for table in tables:
+        cur.execute("""
+            SELECT column_name, data_type
+            FROM information_schema.columns
+            WHERE table_name = %s;
+        """, (table,))
+
+        columns = cur.fetchall()
+        metadata[table] = []
+
+        for col, dtype in columns:
+            # ---- Detect type ----
+            if dtype in ["integer", "numeric", "real", "double precision"]:
+                col_type = "numeric"
+                usage = "use >, <, = for comparison"
+
+            elif "char" in dtype or "text" in dtype:
+                col_type = "text"
+                usage = "use LOWER() or ILIKE for comparison"
+
+            else:
+                col_type = dtype
+                usage = "use appropriate comparison"
+
+            # ---- Fetch sample values (NEW PART) ----
+            sample_values = []
+            try:
+                cur.execute(f"""
+                    SELECT {col}
+                    FROM {table}
+                    WHERE {col} IS NOT NULL
+                    LIMIT 3;
+                """)
+                sample_values = [str(r[0]) for r in cur.fetchall()]
+            except:
+                pass  # ignore errors (like large fields)
+
+            metadata[table].append({
+                "column": col,
+                "type": col_type,
+                "usage": usage,
+                "examples": sample_values
+            })
+
+    cur.close()
+    conn.close()
+    return metadata
+
