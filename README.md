@@ -203,18 +203,3 @@ All major test cases passed successfully.
 * Sentence Transformers
 * Ollama API
 * BM25 Algorithm
-
-Detailed references are available in the project report. 
-
----
-
-## Authors
-
-* B. Sunny Goud
-* CH. Raviteja
-* E. Karthik Yadav
-* MD Ibrahim Ghori
-
-Department of CSE (Artificial Intelligence and Machine Learning)
-Nalla Narasimha Reddy Education Society’s Group of Institutions
-2025–2026 
