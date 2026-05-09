@@ -9,13 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Knowledge base for the AI bot
     const botKnowledge = {
         'admissions': 'For admissions, you need a high school diploma and a minimum GPA of 3.0. Applications close on May 1st. You can apply online via our university portal.',
-        'courses': 'We offer a wide range of courses including Computer Science, Engineering, Business, and Liberal Arts. The CS curriculum focuses heavily on AI and Machine Learning.',
+        'courses': 'We offer a wide range of courses including Computer Science Engineering, Electronics and Communication Engineering, Civil Engineering, MBA, and Pharmacy.',
         'campus': 'Our campus spans 200 acres and includes state-of-the-art labs, a massive library, 5 cafeterias, and 12 dormitories.',
         'hello': 'Hello there! I am your AI College Assistant. How can I guide you today?',
         'hi': 'Hi! How can I help you with your college inquiries?',
-        'fee': 'The tuition fee for an undergraduate program is approximately $15,000 per semester. We also offer various scholarships and financial aid programs.',
+        'fee': 'The tuition fee for a Btech program is approximately 95,000 Rs per year. We also offer MBA and Pharmacy programs.',
         'scholarship': 'We offer merit-based and need-based scholarships. The deadline to apply for the Presidential Scholarship is March 15th.',
-        'contact': 'You can reach the administration at admin@college.edu or call +1-800-555-0199.'
+        'contact': 'You can reach the administration at nnrg.edu ',
+        'bye' : 'Goodbye! Feel free to ask if you have more questions about our college.'
     };
 
     function getCurrentTime() {
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
             response = data.response;
 
         } catch (error) {
-            response = "Error connecting to server.";
+            response = "Error connecting to server. Please try again later.";
         }
 
         return response;

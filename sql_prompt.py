@@ -96,7 +96,7 @@ bus_number
 TABLE: route_pickup_points
 COLUMNS:
 id
-route_id
+route_no
 pickup_point
 pickup_time
 stop_order
@@ -114,9 +114,12 @@ company
 """
 }
 
+from entity_extractor import extract_entities
 from schema_semantics import get_column_metadata
 from sql_generator import generate_sql
 from table_router import route_tables
+from schema_semantics import TABLE_SEMANTICS
+
 
 def build_sql_prompt(user_query: str, tables: list[str]) -> str:
     metadata = get_column_metadata(tables)
@@ -125,37 +128,85 @@ def build_sql_prompt(user_query: str, tables: list[str]) -> str:
 
     for table in tables:
         schema_text += f"\nTABLE: {table}\n"
-
+        examples =""
         for col in metadata[table]:
-            examples = ", ".join(col["examples"]) if col["examples"] else "N/A"
+            if table != "admission_process":
+                examples = ", ".join(col["examples"]) if col["examples"] else "N/A"
+            meaning = TABLE_SEMANTICS[table].get(col['column'], "")
 
             schema_text += (
                 f"{col['column']} ({col['type']})\n"
+                f"  - meaning: {meaning}\n"
                 f"  - usage: {col['usage']}\n"
                 f"  - examples: {examples}\n"
             )
+
+    entity_text = ""
+    entities = extract_entities(user_query)
+    if entities:
+        entity_text += "\nEXTRACTED ENTITIES:\n"
+        for k, v in entities.items():
+            entity_text += f"- {k}: {v}\n"
+
     extra_rules = """
     IMPORTANT SEMANTICS:
     - designation refers to roles like Professor, Assistant Professor
     - fee_status refers to values like Paid, Pending
     - roll_no is unique identifier, always use exact match
     - names should be matched using ILIKE for flexibility
-    """ 
+
+    FUZZY MATCHING RULES:
+    - For name columns → use trigram similarity
+    - Use: column % 'value'
+    - Do NOT use '=' for names
+    - Use ORDER BY similarity(column, 'value') DESC for best match
+    """
+    
     return f"""
     You are an expert PostgreSQL SQL generator.
 
     STRICT RULES:
+    - Use PostgreSQL syntax only
+    - Never use backticks (`) for identifiers
     - Output ONLY SQL
     - No explanation
-    - Use only given tables
+    - Use only the given table
     - Always end with semicolon
 
+    SQL CAPABILITY CONSTRAINT:
+
+    This system supports ONLY simple single-table queries.
+
+    OUTPUT FORMAT (STRICT):
+    SELECT [columns]
+    FROM [table]
+    WHERE [conditions];
+
+    RULES:
+    - Use only ONE table
+    - Do NOT use JOIN
+    - Do NOT use subqueries
+    - Prefer simple filtering conditions
+
+    NAME MATCHING RULE:
+    - For name columns, ALWAYS use trigram similarity operator (%)
+    - Do NOT use '=' or ILIKE for names
+
+    TEXT MATCHING RULE:
+    - For text columns, ALWAYS use ILIKE or LOWER()
+    - NEVER use '=' for text comparison
+
+    If the query requires unsupported operations (JOIN, aggregation, etc.),
+    return:
+    SELECT 'NOT_SUPPORTED';
+
+    COLUMN SELECTION RULE:
+    - Choose only relevant columns
+    - If question asks "which X", return identifier column of X
+    - Use DISTINCT when returning identifiers
+
     IMPORTANT:
-    - Use examples to infer correct filters
-    - If query mentions a value similar to examples, use exact match
-    - For names → use ILIKE
     - For roll_no → exact match
-    - For text → use LOWER() or ILIKE
     - For numeric → use comparison operators
 
     ---
@@ -169,10 +220,15 @@ def build_sql_prompt(user_query: str, tables: list[str]) -> str:
 
     ---
 
+    {entity_text}
+
+    ---
+
     QUESTION:
     {user_query}
 
     SQL:
+    
     """
 if __name__ == "__main__":
     while True:
@@ -180,7 +236,25 @@ if __name__ == "__main__":
         if query.lower() == "exit":
             break
         tables = route_tables(query)
-        prompt = build_sql_prompt(query, tables)
-        sql=generate_sql(prompt)  # assume this function exists
+        entities = extract_entities(query)
+
+        # ---- FORCE LOGIC FOR NAME ----
+        if "name" in entities and tables:
+            name = entities["name"]
+            table = tables[0]
+
+            sql = f"""
+            SELECT *
+            FROM {table}
+            WHERE REPLACE(name, '.', '') % '{name}'
+            ORDER BY similarity(REPLACE(name, '.', ''), '{name}') DESC;
+            """
+
+        else:
+        # normal flow
+            prompt = build_sql_prompt(query, tables)
+            sql=generate_sql(prompt) 
+            print("Prompt:", prompt)
+            # assume this function exists
         print("SQL:", sql)
         print()

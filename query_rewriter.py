@@ -3,20 +3,19 @@ from config import OLLAMA_URL_phi3, MODEL
 
 def rewrite_query(query: str) -> str:
     """
-    Uses Ollama to fix spelling, grammar and clarity.
+    Uses Ollama to fix spelling mistakes
     Returns a rewritten query.
     """
 
     prompt = f"""
-    You are a query rewriting assistant.
+    You are a query spelling corrector.
 
     STRICT RULES:
-    - Correct spelling and grammar only
+    - Correct spelling
     - DO NOT add any new words
     - DO NOT expand abbreviations
     - DO NOT change meaning
     - Keep query as close to original as possible
-    - Preserve important keywords (e.g., HOD, CGPA, CSE)
 
     IMPORTANT 
     - DO NOT add any new words
@@ -39,6 +38,7 @@ def rewrite_query(query: str) -> str:
         r = requests.post(f"{OLLAMA_URL_phi3}/api/generate", json=body, timeout=60)
         result = r.json()["response"].strip()
         result = str(result)
+        print("Rewritten query:", result)
         return result
 
     except Exception as e:

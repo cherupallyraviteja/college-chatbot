@@ -23,7 +23,9 @@ def authenticate_student(roll_no: str, password: str) -> bool:
         return False
 
     stored_hash = row[0]  
-    return bcrypt.checkpw(
+    boll=bcrypt.checkpw(
         password.encode("utf-8"),
         stored_hash.encode("utf-8")
     )
+    print("bcrypt check result: ", boll)
+    return boll

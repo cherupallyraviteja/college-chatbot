@@ -9,4 +9,14 @@ def execute_sql(sql):
     cols = [desc[0] for desc in cur.description]
     cur.close()
     conn.close()
-    return cols, rows
+    result = ""
+    for row in rows:
+            row_dict = dict(zip(cols, row))
+            for key, value in row_dict.items():
+                if key != "password":
+                    result += f"{key}: {value}\n"
+    return result
+
+if __name__ == "__main__":
+    sql = "SELECT * FROM admission_process WHERE program = 'Btech CSE' AND description LIKE '%admission%';"
+    print(execute_sql(sql))

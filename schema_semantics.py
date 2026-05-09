@@ -60,7 +60,7 @@ TABLE_SEMANTICS = {
     },
     "route_pickup_points": {
         "id": "Internal numeric identifier for a pickup point.",
-        "route_id": "Identifier of the related transport route.",
+        "route_no": "Identifier of the related transport route.",
         "pickup_point": "Name of the pickup location.",
         "pickup_time": "Scheduled pickup time.",
         "stop_order": "Sequence order of the stop on the route."
@@ -130,4 +130,3 @@ def get_column_metadata(tables: list[str]):
     cur.close()
     conn.close()
     return metadata
-

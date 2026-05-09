@@ -1,4 +1,4 @@
-from response_generator import generate_response
+from entity_extractor import extract_entities
 from sql_generator import generate_sql
 from safety import validate_and_clean_sql
 from sql_executor import execute_sql
@@ -7,7 +7,6 @@ from sql_prompt import build_sql_prompt
 from auth import authenticate_student
 from query_rewriter import rewrite_query
 import re
-
 
 def extract_roll_no(text: str):
     """"
@@ -27,51 +26,50 @@ def print_result(row_dict):
 print("Welcome to NNRG AIML Chatbot")
 print("Use 'Exit' to quit the chatbot \n")
 
-while True:
-    query = input("You:- ")
-    if query.lower() == "exit":
-        break
-    user_query = query#rewrite_query(query).lower()
+
+def generate_result(user_query):
     tables = route_tables(user_query)
     if not tables:
-        print("Bot:- Cannot determine relevant data source.")
-        continue
-    roll_no = None
+        return "Cannot determine relevant data source.", None
+    entities = extract_entities(user_query)
 
-    if "students" in tables:
-        roll_no = extract_roll_no(user_query)
+    # ---- FORCE LOGIC FOR NAME ----
+    if "name" in entities and tables:
+        name = entities["name"]
+        table = tables[0]
 
-        if not roll_no:
-            roll_no = input("   Enter roll number: ")
-            user_query += f" for roll number {roll_no}"
-        password = input("   Enter password (Use Capitals): ")
+        sql = f"""
+        SELECT *
+        FROM {table}
+        WHERE REPLACE(name, '.', '') % '{name}'
+        ORDER BY similarity(REPLACE(name, '.', ''), '{name}') DESC;
+        """
+        user_query = rewrite_query(user_query)
 
-        if not authenticate_student(roll_no, password):
-            print("Bot: Authentication failed.")
-            continue
+    else:
+        user_query = user_query.lower()
+        prompt = build_sql_prompt(user_query, tables)
+        print("Generated Prompt: \n", prompt)
+        raw_sql = generate_sql(prompt)
 
-    prompt = build_sql_prompt(user_query, tables)
-    raw_sql = generate_sql(prompt)
-
-    is_valid, sql = validate_and_clean_sql(raw_sql)
-
-    if not is_valid:
-        print("Bot:- Cannot answer this question with available data.")
-        continue
-
+        is_valid, sql = validate_and_clean_sql(raw_sql)
+        if not is_valid:
+            return "Cannot answer this question with available data.", sql
+    result = ""
     try:
-        cols, rows = execute_sql(sql)
-        result = ""
-        for row in rows:
-            row_dict = dict(zip(cols, row))
-           
-            for key, value in row_dict.items():
-                if key != "password":
-                    result += f"{key}: {value}\n"
+        result = execute_sql(sql)
     except Exception as e:
-        print("Bot:- Query execution failed due to ", str(e))
+        print(f"Error executing SQL: {str(e)}")
+        return f"Sorry, I need more information to answer that.", sql
+ 
+    return result, sql
 
-    print("Bot:- ", result.strip())
-    print("Rewritten Query: ", user_query)
-    print("Generated SQL: \n", sql)
-    print("------------------------------")
+if __name__ == "__main__":
+    while True:
+        query = input("Enter your query: ")
+        if query.lower() == "exit":
+            break
+        result, sql = generate_result(query)
+        print("Bot:- ", result)
+        print("Generated SQL: \n", sql)
+        print("------------------------------")

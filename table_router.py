@@ -31,22 +31,42 @@ COLUMN_DESCRIPTIONS = {
     "faculty.department": "faculty department",
 
     # transport
-    "transport_details.route_no": "bus route number",
-    "transport_details.driver_name": "bus driver name",
-    "route_pickup_points.pickup_point": "bus stop location",
-    "route_pickup_points.pickup_time": "bus pickup timing",
+    "transport_details.route_no": "Public-facing route number.",
+    "transport_details.driver_name": "Name of the driver.",
+    "transport_details.driver_phone": "Contact phone number of the driver.",
+    "transport_details.bus_number": "Registration number of the bus.",
+
+    # route_pickup_points
+    "route_pickup_points.route_no": "Public-facing route number.",
+    "route_pickup_points.pickup_point": "Name of a particular bus stop or pickup point",
+    "route_pickup_points.pickup_time": "Scheduled pickup time.",
+    "route_pickup_points.stop_order": "Sequence order of the stop on the route.",
+
 
     # placements
     "placements.company": "company name placement",
     "placements.student_name": "placed student name",
+    "placements.academic_year": "Academic year of placement.",
+    "placements.roll_no": "Roll number of the placed student.",
+    "placements.branch": "Academic branch of the student.",
 
-    # admission
-    "admission_documents.document_name": "required documents certificates",
-    "admission_process.description": "admission procedure",
+    # admission documents
+    "admission_documents.document_name": "Name of the document required for admission",
+    "admission_documents.document_id": "Internal numeric identifier for a document record.",
+    "admission_documents.ap_ts_students_required": "Whether required for AP/TS students.",
+    "admission_documents.national_students_required": "Whether required for non-AP/TS students.",
+    
+    #admission process
+    "admission_process.program": "Academic program name for which the admission applies.",
+    "admission_process.description": "Description explaining the admission procedure.",
 
     # fees
-    "fee_details.amount": "fee amount",
-    "fee_details.program": "program fee structure",
+    "fee_details.amount": "Monetary amount charged for the fee category.",
+    "fee_details.program": "Academic program to which the fee applies.",
+    "fee_details.fee_category": "Category or type of fee.",
+
+    # programs
+    "degree_programs.degree_program": "Name of the degree program.",
 }
 
 def get_table(col):
@@ -85,6 +105,8 @@ def route_tables(user_query: str, top_k_tables=3):
     selected = []
     if not ranked:
         return []
+
+    print("Selected Tables : ",ranked[0][0])
 
     return [ranked[0][0]]  # always include best
 
